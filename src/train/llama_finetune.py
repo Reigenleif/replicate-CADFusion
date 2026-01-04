@@ -1,5 +1,6 @@
 
 import argparse
+import csv
 import os
 import torch
 import transformers
@@ -8,7 +9,7 @@ from CAD_dataset import CADDataset, DataCollatorForSupervisedDataset
 from huggingface_hub import login
 from pathlib import Path
 from peft import LoraConfig, get_peft_model
-from transformers import Trainer, TrainingArguments
+from transformers import Trainer, TrainingArguments, TrainerCallback
 from utils import prepare_model_and_tokenizer
 from dotenv import load_dotenv
 
@@ -17,6 +18,33 @@ if 'CUDA_HOME' not in os.environ:
     os.environ['CUDA_HOME'] = os.environ.get('CONDA_PREFIX', '/usr/local/cuda')
 
 load_dotenv()
+
+
+class EvalResultsCallback(TrainerCallback):
+    """Callback to save evaluation results to CSV file every epoch."""
+    
+    def __init__(self, csv_path):
+        self.csv_path = csv_path
+        self.csv_path.parent.mkdir(parents=True, exist_ok=True)
+        # Initialize CSV file with headers
+        with open(self.csv_path, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['epoch', 'step', 'eval_loss'])
+    
+    def on_evaluate(self, args, state, control, metrics=None, **kwargs):
+        """Called after an evaluation phase."""
+        if metrics is not None:
+            epoch = state.epoch
+            step = state.global_step
+            eval_loss = metrics.get('eval_loss', None)
+            
+            # Append results to CSV
+            with open(self.csv_path, 'a', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow([epoch, step, eval_loss])
+            
+            print(f"Evaluation results saved: Epoch {epoch}, Step {step}, Loss {eval_loss}")
+
 
 def setup_datasets(args, llama_tokenizer, transform_args={}):
     datasets = {
@@ -51,7 +79,7 @@ def setup_training_args(args):
         eval_steps=args.eval_freq,
         save_steps=args.save_freq,
         logging_steps=10,
-        eval_strategy="steps",
+        eval_strategy="epoch",
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
         learning_rate=args.lr,
@@ -83,12 +111,17 @@ def setup_trainer(args):
         tokenizer=llama_tokenizer,
     )
 
+    # Create CSV path for evaluation results
+    csv_path = Path("result") / "scores_per_epochs.csv"
+    eval_callback = EvalResultsCallback(csv_path)
+
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=datasets["train"],
         eval_dataset=datasets["val"],
         data_collator=data_collator,
+        callbacks=[eval_callback],
     )
 
     return trainer
