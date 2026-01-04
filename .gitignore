@@ -172,3 +172,4 @@ cython_debug/
 
 # Data files
 cad_data/
+data/sl_data/*.json
