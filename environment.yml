@@ -1,0 +1,28 @@
+name: cadfusion
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pythonocc-core=7.7.0
+  - pip
+  - pip:
+      - torch==2.7.1
+      - transformers==4.50.0
+      - huggingface_hub==0.26.0
+      - peft==0.9.0
+      - accelerate==0.28.0
+      - psutil==5.9.8
+      - pillow==10.4.0
+      - datasets==3.1.0
+      - trl==0.11.4
+      - gdown==5.2.0
+      - python-dotenv>=1.0.0,<2.0.0
+      - wandb==0.16.4
+      - deepspeed==0.15.0
+      - trimesh==4.4.9
+      - plyfile==1.0.3
+      - openai==1.75.0
+      - azure-identity==1.21.0
+      - scikit-learn==1.3.2
+      - git+https://github.com/otaheri/chamfer_distance@dc9987dcf70888d387d96893ba1fb9ba9a333992
