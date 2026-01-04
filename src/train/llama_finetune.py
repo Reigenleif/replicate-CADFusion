@@ -12,6 +12,10 @@ from transformers import Trainer, TrainingArguments
 from utils import prepare_model_and_tokenizer
 from dotenv import load_dotenv
 
+# Set CUDA_HOME to avoid DeepSpeed errors
+if 'CUDA_HOME' not in os.environ:
+    os.environ['CUDA_HOME'] = os.environ.get('CONDA_PREFIX', '/usr/local/cuda')
+
 load_dotenv()
 
 def setup_datasets(args, llama_tokenizer, transform_args={}):
@@ -35,6 +39,7 @@ def setup_training_args(args):
     if args.debug:
         os.environ["WANDB_DISABLED"] = "True"
     os.environ["ACCELERATE_MIXED_PRECISION"] = "no"
+    os.environ["ACCELERATE_USE_DEEPSPEED"] = "false"
     training_args = TrainingArguments(
         fsdp=False,
         fp16=False,
@@ -46,7 +51,7 @@ def setup_training_args(args):
         eval_steps=args.eval_freq,
         save_steps=args.save_freq,
         logging_steps=10,
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
         learning_rate=args.lr,
@@ -66,8 +71,10 @@ def setup_training_args(args):
 
 def setup_trainer(args):
     training_args = setup_training_args(args)
-    if args.device_map == 'accelerate':
+    if args.device_map == 'accelerate' and not args.cpu_only:
         args.device_map = {'': training_args.local_rank}
+    if args.cpu_only:
+        args.device_map = 'cpu'
     model, llama_tokenizer = prepare_model_and_tokenizer(args)
 
     datasets = setup_datasets(args, llama_tokenizer)
@@ -123,6 +130,7 @@ if __name__ == "__main__":
     parser.add_argument("--device-map", type=str, default='auto')
     parser.add_argument("--resume-dir", type=Path, default=None)
     parser.add_argument("--debug", action="store_true", default=False)
+    parser.add_argument("--cpu-only", action="store_true", default=False, help="Run training on CPU only")
     args = parser.parse_args()
     os.environ["WANDB_PROJECT"] = "CADFusion_SL"
     main(args)

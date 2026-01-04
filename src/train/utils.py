@@ -1,6 +1,7 @@
 import torch
 import transformers
 from peft import LoraConfig, PeftModel, get_peft_model
+from transformers import BitsAndBytesConfig
 
 IGNORE_INDEX = -100
 MAX_LENGTH = 512
@@ -42,8 +43,32 @@ def prepare_model_and_tokenizer(args):
         device_map = args.device_map
     else:
         device_map = 'auto'
-    pipeline = transformers.pipeline("text2text-generation",
-                                        model=model_id, model_kwargs={"torch_dtype": torch.float32}, device_map=device_map)
+    
+    cpu_only = hasattr(args, 'cpu_only') and args.cpu_only
+    
+    if cpu_only:
+        # CPU mode without quantization
+        print("Running in CPU-only mode")
+        pipeline = transformers.pipeline("text-generation",
+                                            model=model_id, 
+                                            model_kwargs={"torch_dtype": torch.float32}, 
+                                            device_map="cpu")
+    else:
+        # Configure 4-bit quantization for GPU
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16,
+            bnb_4bit_use_double_quant=True,
+        )
+        
+        pipeline = transformers.pipeline("text-generation",
+                                            model=model_id, 
+                                            model_kwargs={
+                                                "quantization_config": bnb_config,
+                                                "torch_dtype": torch.bfloat16
+                                            }, 
+                                            device_map=device_map)
     tokenizer = pipeline.tokenizer
     base_model = pipeline.model
 
@@ -75,7 +100,7 @@ def prepare_model_and_tokenizer(args):
     peftmodel = get_peft_model(base_model, peft_config)
     if args.pretrained_path:
         # load a previous checkpoint if the path is given
-        model = PeftModel.from_pretrained(base_model, args.pretrained_path, device_map=device_map)
+        model = PeftModel.from_pretrained(base_model, str(args.pretrained_path), device_map=device_map)
         peft_state_dict = {f"{k}": v for k, v in model.state_dict().items()}
         peftmodel.load_state_dict(peft_state_dict)
         
