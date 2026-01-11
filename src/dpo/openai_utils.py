@@ -7,9 +7,8 @@ from mimetypes import guess_type
 from openai import AzureOpenAI
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 
-END_POINT = '<endpoint>'
-MODEL_NAME = 'gpt-4o_2024-08-06'
-API_VER = '2024-02-01'
+from utils.openai_client import get_client
+from dotenv import load_dotenv
 
 def local_image_to_data_url(image_path):
     # Encode a local image into data URL
@@ -21,18 +20,10 @@ def local_image_to_data_url(image_path):
     return f"data:{mime_type};base64,{base64_encoded_data}"
 
 def ask_gpt_on_figure(data, _, __):
-    endpoint = END_POINT
-    token_provider = get_bearer_token_provider(
-        DefaultAzureCredential(),
-        "https://cognitiveservices.azure.com/.default"
-    )
-    deployment_name = MODEL_NAME
-
-    client = AzureOpenAI(
-        azure_ad_token_provider=token_provider,
-        azure_endpoint=endpoint,
-        api_version=API_VER
-    )
+    load_dotenv()
+    deployment_name = os.getenv('DPO_VLM_MODEL_ID', 'llama3.2:1b')
+    client = get_client()
+    
     description = data['description']
     data_scale = 10
     measurement = 'if the figure corresponds to the given description'

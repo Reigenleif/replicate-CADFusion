@@ -7,24 +7,16 @@ import argparse
 from mimetypes import guess_type
 from tqdm import tqdm
 import re
+from utils.openai_client import get_client
 
 from openai import AzureOpenAI
 from azure.identity import AzureCliCredential, get_bearer_token_provider
+import os
+from dotenv import load_dotenv
 
-scope = "api://trapi/.default"
-credential = get_bearer_token_provider(AzureCliCredential(),scope)
-
-api_version = '2024-12-01-preview'
-# deployment_name = 'gpt-4.1-mini_2025-04-14'
-deployment_name = 'gpt-4o_2024-08-06'
-instance = '<trapi/path>' # See https://aka.ms/trapi/models for the instance name, remove /openai (library adds it implicitly)
-endpoint = f'https://trapi.research.microsoft.com/{instance}'
-
-client = AzureOpenAI(
-    azure_endpoint=endpoint,
-    azure_ad_token_provider=credential,
-    api_version=api_version,
-)
+load_dotenv()
+deployment_name = os.getenv('PREPROCESSING_VLM_MODEL_ID', 'llama3.2:1b')
+client = get_client()
 
 def local_image_to_data_url(image_path):
     mime_type, _ = guess_type(image_path)
