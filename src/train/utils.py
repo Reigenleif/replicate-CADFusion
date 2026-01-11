@@ -2,6 +2,8 @@ import torch
 import transformers
 from peft import LoraConfig, PeftModel, get_peft_model
 from transformers import BitsAndBytesConfig
+import os
+from dotenv import load_dotenv
 
 IGNORE_INDEX = -100
 MAX_LENGTH = 512
@@ -37,7 +39,8 @@ def smart_tokenizer_and_embedding_resize(
         output_embeddings[-num_new_tokens:] = output_embeddings_avg
 
 def prepare_model_and_tokenizer(args):
-    model_id = "meta-llama/Meta-Llama-3-8B"
+    load_dotenv()
+    model_id = os.getenv('MAIN_MODEL_ID', 'meta-llama/Llama-3.2-1B-Instruct')
     print(f"Model size: {model_id}")
     if hasattr(args, 'device_map'):
         device_map = args.device_map
