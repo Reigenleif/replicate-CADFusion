@@ -173,3 +173,14 @@ cython_debug/
 # Data files
 cad_data/
 data/sl_data/*.json
+data/vf_data/*.json
+
+# Temp files
+temp/
+
+# Logs
+logs/
+wandb/
+
+#results and intermediate files
+result/
