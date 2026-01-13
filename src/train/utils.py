@@ -57,21 +57,45 @@ def prepare_model_and_tokenizer(args):
                                             model_kwargs={"torch_dtype": torch.float32}, 
                                             device_map="cpu")
     else:
-        # Configure 4-bit quantization for GPU
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16,
-            bnb_4bit_use_double_quant=True,
-        )
-        
-        pipeline = transformers.pipeline("text-generation",
-                                            model=model_id, 
-                                            model_kwargs={
-                                                "quantization_config": bnb_config,
-                                                "torch_dtype": torch.bfloat16
-                                            }, 
-                                            device_map=device_map)
+        quant_type = os.getenv('QUANTIZATION_TYPE', 'no')
+        if quant_type == 'no':
+            # No quantization
+            print("Running without quantization")
+            pipeline = transformers.pipeline("text-generation",
+                                                model=model_id, 
+                                                model_kwargs={"torch_dtype": torch.bfloat16}, 
+                                                device_map=device_map)
+        elif quant_type == '8bit':
+            # Configure 8-bit quantization for GPU
+            print("Running with 8-bit quantization")
+            bnb_config = BitsAndBytesConfig(
+                load_in_8bit=True,
+            )
+            
+            pipeline = transformers.pipeline("text-generation",
+                                                model=model_id, 
+                                                model_kwargs={
+                                                    "quantization_config": bnb_config,
+                                                    "torch_dtype": torch.bfloat16
+                                                }, 
+                                                device_map=device_map)
+        elif quant_type == '4bit':
+            print("Running with 4-bit quantization")
+            # Configure 4-bit quantization for GPU
+            bnb_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_use_double_quant=True,
+            )
+            
+            pipeline = transformers.pipeline("text-generation",
+                                                model=model_id, 
+                                                model_kwargs={
+                                                    "quantization_config": bnb_config,
+                                                    "torch_dtype": torch.bfloat16
+                                                }, 
+                                                device_map=device_map)
     tokenizer = pipeline.tokenizer
     base_model = pipeline.model
 
