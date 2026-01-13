@@ -27,18 +27,18 @@ mkdir -p exp/model_generation
 
 echo "--------------------Inferencing--------------------" > $log_path/inference.txt
 rm $inference_path
-python3 src/test/inference.py --pretrained-path $model_path --in-path $data_path --out-path $inference_path --num-samples 5 --temperature $temperature --model-name llama3 > $log_path/inference.txt $3
+python src/test/inference.py --pretrained-path $model_path --in-path $data_path --out-path $inference_path --num-samples 5 --temperature $temperature --model-name llama3 > $log_path/inference.txt $3
 
 echo "--------------------Parsing CAD objects--------------------" > $log_path/parsing_cad.txt
 rm -rf $visual_obj_path
-python3 src/rendering_utils/parser.py --in-path $inference_path --out-path $visual_obj_path > $log_path/parsing_cad.txt
+python src/rendering_utils/parser.py --in-path $inference_path --out-path $visual_obj_path > $log_path/parsing_cad.txt
 
 echo "--------------------Parsing visual objects--------------------" > $log_path/parsing_visual.txt
-python3 src/rendering_utils/parser_visual.py --data_folder $visual_obj_path > $log_path/parsing_visual.txt
-python3 src/rendering_utils/ptl_sampler.py --in_dir $visual_obj_path --out_dir ptl > $log_path/sampling_ptl.out
+python src/rendering_utils/parser_visual.py --data_folder $visual_obj_path > $log_path/parsing_visual.txt
+python src/rendering_utils/ptl_sampler.py --in_dir $visual_obj_path --out_dir ptl > $log_path/sampling_ptl.out
 
 echo "--------------------Rendering--------------------" > $log_path/rendering.txt
 rm -rf $output_figure_path
 export DISPLAY=:99
 Xvfb :99 -screen 0 640x480x24 &
-python3 src/rendering_utils/img_renderer.py --input_dir $visual_obj_path --output_dir $output_figure_path > $log_path/rendering.txt
+python src/rendering_utils/img_renderer.py --input_dir $visual_obj_path --output_dir $output_figure_path > $log_path/rendering.txt
