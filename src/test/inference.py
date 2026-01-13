@@ -2,12 +2,11 @@ import argparse
 import json
 import random
 
-from huggingface_hub import login
 from tqdm import tqdm
 from utils import MAX_LENGTH, prepare_model_and_tokenizer
 
-login()
-
+from dotenv import load_dotenv
+load_dotenv()
 random.seed(0)
 
 def conditional_sample(args):

@@ -4,9 +4,9 @@ import torch
 import json
 import random
 import transformers
-from huggingface_hub import login
+from dotenv import load_dotenv
 
-login() # put your huggingface token here
+load_dotenv()
 os.environ["WANDB_PROJECT"] = "CADFusion_VF"
 
 from datasets import Dataset
