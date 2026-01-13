@@ -1,6 +1,7 @@
 import torch
 import transformers
 from peft import LoraConfig, PeftModel, get_peft_model
+import os
 
 IGNORE_INDEX = -100
 MAX_LENGTH = 512
@@ -36,13 +37,13 @@ def smart_tokenizer_and_embedding_resize(
         output_embeddings[-num_new_tokens:] = output_embeddings_avg
 
 def prepare_model_and_tokenizer(args):
-    model_id = "meta-llama/Meta-Llama-3-8B"
+    model_id = os.getenv('MAIN_MODEL_ID', 'meta-llama/Llama-3.2-1B-Instruct')
     print(f"Model size: {model_id}")
     if hasattr(args, 'device_map'):
         device_map = args.device_map
     else:
         device_map = 'auto'
-    pipeline = transformers.pipeline("text2text-generation",
+    pipeline = transformers.pipeline("text-generation",
                                         model=model_id, model_kwargs={"torch_dtype": torch.float32}, device_map=device_map)
     tokenizer = pipeline.tokenizer
     base_model = pipeline.model
