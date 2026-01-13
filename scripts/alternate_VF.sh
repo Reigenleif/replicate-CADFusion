@@ -14,7 +14,7 @@ eval_data=$data_path/val.json
 #         VF run 1: CAD-1 (automatically)
 #         VF run 2: CAD-2 (automatically)
 #         ...
-base_name=model_name_you_trained_for_SL_with_last_digit_removed
+base_name=$1
 
 run_name=${base_name}0
 ./scripts/generate_samples.sh $run_name test "--full --device-map auto"
@@ -24,7 +24,7 @@ run_name=${base_name}0
 ./scripts/make_dpo_data.sh $run_name-train "--gpu 0"
 
 
-for LOOP in 1 2 3 4 5
+for LOOP in 1 
 do
     echo "Starting VF round $LOOP"
     run_name=$base_name$LOOP    
@@ -34,7 +34,7 @@ do
     sft_run_name=$base_name$LOOP
 
     python src/train/dpo.py --run-name $dpo_run_name --pretrained-path $exp_path/$base_name$((LOOP-1)) --data-path $dpo_training_path --output-path $dpo_save_path
-    python src/train/llama_finetune.py --num-epochs 1 --run-name $sft_run_name --data-path $train_data --eval-data-path $eval_data --eval-freq 3000 --pretrained-path $dpo_save_path --expdir $exp_path
+    # python src/train/llama_finetune.py --num-epochs 1 --run-name $sft_run_name --data-path $train_data --eval-data-path $eval_data --eval-freq 3000 --pretrained-path $dpo_save_path --expdir $exp_path
     
     ./scripts/generate_samples.sh $dpo_run_name test "--full --device-map auto"
     ./scripts/generate_samples.sh $run_name test "--full --device-map auto"
