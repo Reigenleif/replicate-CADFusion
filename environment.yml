@@ -7,7 +7,8 @@ dependencies:
   - pythonocc-core=7.7.0
   - pip
   - pip:
-      - torch==2.7.1
+      - torch
+      - torchvision
       - transformers==4.50.0
       - huggingface_hub==0.26.0
       - peft==0.9.0
@@ -26,4 +27,8 @@ dependencies:
       - openai==1.75.0
       - azure-identity==1.21.0
       - scikit-learn==1.3.2
+      - numpy
+      - scipy
+      - requests
+      - tqdm
       - git+https://github.com/otaheri/chamfer_distance@dc9987dcf70888d387d96893ba1fb9ba9a333992
