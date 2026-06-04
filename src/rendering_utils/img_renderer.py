@@ -55,10 +55,12 @@ def main():
     
     files = []
     cad_folders = sorted(glob(args.input_dir+'/*/'))
+    
     for folder in cad_folders:
         input_path = pathlib.Path(folder)
+        print(folder)
         files += list(input_path.glob("*.st*p"))
-    print(len(files))
+        print(list(input_path.glob("*.st*p")))
     # files = files[36000:] # debug only (* remove *)
     output_path = pathlib.Path(args.output_dir)
     if not output_path.exists():

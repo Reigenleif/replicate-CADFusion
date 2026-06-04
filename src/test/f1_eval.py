@@ -38,8 +38,8 @@ line = []
 arc = []
 circle = []
 ext = []
-for i in range(1000):
-    ground_truth = data[i]['output']
+for i in range(len(gen)):
+    ground_truth = gen[i]['ground_truth']
     pred = gen[i]['output']
     ext_f1 = find_f1(ground_truth, pred, r'<extrude_end>')
     if ext_f1 > 0:

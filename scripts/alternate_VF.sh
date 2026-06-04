@@ -17,8 +17,8 @@ eval_data=$data_path/val.json
 base_name=$1
 
 run_name=${base_name}0
-./scripts/generate_samples.sh $run_name test "--full --device-map auto"
-./scripts/generate_samples.sh $run_name train "--sample-len 1000 --device-map auto"
+# ./scripts/generate_samples.sh $run_name test "--sample-len 20 --device-map auto"
+# ./scripts/generate_samples.sh $run_name train "--sample-len 80 --device-map auto"
 
 ./scripts/make_dpo_data.sh $run_name --score-only 
 ./scripts/make_dpo_data.sh $run_name-train "--gpu 0"

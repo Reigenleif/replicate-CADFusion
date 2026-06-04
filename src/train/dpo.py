@@ -13,6 +13,108 @@ from datasets import Dataset
 from trl import DPOTrainer, DPOConfig
 from utils import prepare_model_and_tokenizer
 
+
+class CustomDPOTrainer(DPOTrainer):
+    """
+    Custom DPO Trainer that overrides get_batch_samples to match the Trainer signature.
+    
+    The base Trainer expects: get_batch_samples(epoch_iterator, num_batches, device)
+    The DPOTrainer has: get_batch_samples(model, batch) for generation during eval
+    
+    This custom trainer adapts the signature to be compatible with the base Trainer.
+    """
+    
+    def get_batch_samples(self, epoch_iterator, num_batches, device):
+        """
+        Collect batch samples from the epoch iterator.
+        
+        This method matches the signature expected by the base Trainer class.
+        It collects batches from the iterator and returns them along with the item count.
+        
+        Args:
+            epoch_iterator: Iterator over batches
+            num_batches: Number of batches to collect
+            device: Device to put tensors on
+            
+        Returns:
+            tuple: (batch_samples, num_items_in_batch)
+        """
+        batch_samples = []
+        num_items_in_batch = None
+        
+        for _ in range(num_batches):
+            try:
+                batch_samples += [next(epoch_iterator)]
+            except StopIteration:
+                break
+
+        if len(batch_samples) > 0 and "labels" in batch_samples[0]:
+            # For now we don't support object detection
+            try:
+                num_items_in_batch = sum([(batch["labels"].ne(-100)).sum() for batch in batch_samples])
+            except (TypeError, AttributeError):
+                pass
+
+        if num_items_in_batch is not None:
+            if self.args.average_tokens_across_devices:
+                num_items_in_batch = self.accelerator.gather(num_items_in_batch).sum()
+
+            if torch.is_tensor(num_items_in_batch):
+                num_items_in_batch = num_items_in_batch.to(device)
+
+        return batch_samples, num_items_in_batch
+    
+    def get_batch_samples_for_generation(self, model, batch):
+        """
+        Generate samples from the model and reference model for the given batch.
+        
+        This is the original DPOTrainer.get_batch_samples method, renamed to avoid
+        signature conflicts with the base Trainer class.
+        
+        Args:
+            model: The policy model
+            batch: A single batch of data
+            
+        Returns:
+            tuple: (policy_output_decoded, reference_output_decoded)
+        """
+        # Call the parent DPOTrainer's get_batch_samples method
+        return super().get_batch_samples(model, batch)
+    
+    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
+        """
+        Compute the DPO loss.
+        
+        This method matches the signature expected by the base Trainer class by accepting
+        the num_items_in_batch parameter, even though DPO doesn't use it.
+        
+        Args:
+            model: The model to compute loss for
+            inputs: Input batch
+            return_outputs: Whether to return outputs along with loss
+            num_items_in_batch: Number of items in batch (unused by DPO, but required by Trainer signature)
+            
+        Returns:
+            Loss tensor, or tuple of (loss, metrics) if return_outputs=True
+        """
+        # Call the parent DPOTrainer's compute_loss method, ignoring num_items_in_batch
+        return super().compute_loss(model, inputs, return_outputs)
+    
+    def log(self, logs, start_time=None):
+        """
+        Log metrics on the various objects watching training.
+        
+        This method matches the signature expected by the base Trainer class by accepting
+        the start_time parameter.
+        
+        Args:
+            logs: Dictionary of metrics to log
+            start_time: Optional start time for computing speed metrics
+        """
+        # Call the parent DPOTrainer's log method, which handles DPO-specific metric aggregation
+        # The DPOTrainer.log internally calls super().log(logs), so start_time will be passed through
+        return super().log(logs)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--run-name", type=str, required=True)
 parser.add_argument("--lora-rank", type=int, default=32)
@@ -66,7 +168,7 @@ training_args = DPOConfig(
     output_dir=args.output_path
     )
 
-trainer = DPOTrainer(
+trainer = CustomDPOTrainer(
     llama_model,
     None,
     args=training_args,

@@ -39,6 +39,6 @@ python src/rendering_utils/ptl_sampler.py --in_dir $visual_obj_path --out_dir pt
 
 echo "--------------------Rendering--------------------" > $log_path/rendering.txt
 rm -rf $output_figure_path
-export DISPLAY=:99
-Xvfb :99 -screen 0 640x480x24 &
+
+
 python src/rendering_utils/img_renderer.py --input_dir $visual_obj_path --output_dir $output_figure_path > $log_path/rendering.txt
