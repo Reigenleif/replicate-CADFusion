@@ -31,4 +31,5 @@ dependencies:
       - scipy
       - requests
       - tqdm
+      - rich
       - git+https://github.com/otaheri/chamfer_distance@dc9987dcf70888d387d96893ba1fb9ba9a333992
